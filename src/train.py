@@ -21,6 +21,44 @@ from src.data_loader import get_data_loaders
 from src.model import get_model, count_parameters
 
 
+class FocalLoss(nn.Module):
+    """
+    Focal Loss for imbalanced classification.
+
+    Down-weights easy negatives so the model focuses on hard examples.
+    FL(p_t) = -α_t * (1 - p_t)^γ * log(p_t)
+
+    Args:
+        alpha: Weighting factor for positive class (handles class imbalance)
+        gamma: Focusing parameter - higher = more focus on hard examples (typically 2.0)
+    """
+
+    def __init__(self, alpha: float = 0.25, gamma: float = 2.0):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        probs = torch.sigmoid(logits)
+
+        # Probability of correct class
+        p_t = probs * targets + (1 - probs) * (1 - targets)
+
+        # Alpha weighting for class imbalance
+        alpha_t = self.alpha * targets + (1 - self.alpha) * (1 - targets)
+
+        # Focal weight: down-weight easy examples
+        focal_weight = (1 - p_t) ** self.gamma
+
+        # Binary cross entropy (without reduction)
+        bce = -targets * torch.log(probs + 1e-8) - (1 - targets) * torch.log(1 - probs + 1e-8)
+
+        # Combine
+        loss = alpha_t * focal_weight * bce
+
+        return loss.mean()
+
+
 def get_device() -> torch.device:
     """Get the best available device (MPS > CUDA > CPU)."""
     if torch.backends.mps.is_available():
@@ -117,6 +155,8 @@ def train(
     patience: int = 5,
     seed: int = 42,
     samples_per_epoch: int = 50000,
+    loss_type: str = "bce",
+    focal_gamma: float = 2.0,
 ):
     """
     Train the boundary detection model.
@@ -134,6 +174,8 @@ def train(
         patience: Early stopping patience
         seed: Random seed
         samples_per_epoch: Maximum training samples per epoch
+        loss_type: 'bce' or 'focal'
+        focal_gamma: Gamma parameter for focal loss
     """
     # Set seed for reproducibility
     torch.manual_seed(seed)
@@ -162,10 +204,17 @@ def train(
     model = model.to(device)
     print(f"\nModel: {model_type} ({count_parameters(model):,} parameters)")
 
-    # Loss function with class weighting for imbalanced data
+    # Loss function
     pos_weight = class_weights.to(device)
-    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    print(f"Positive class weight: {pos_weight.item():.2f}")
+    if loss_type == "focal":
+        # For focal loss, alpha is the weight for positive class
+        # Convert pos_weight to alpha: alpha = pos_weight / (1 + pos_weight)
+        alpha = pos_weight.item() / (1 + pos_weight.item())
+        criterion = FocalLoss(alpha=alpha, gamma=focal_gamma)
+        print(f"Using Focal Loss (alpha={alpha:.3f}, gamma={focal_gamma})")
+    else:
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        print(f"Using BCE Loss (pos_weight={pos_weight.item():.2f})")
 
     # Optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -221,6 +270,7 @@ def train(
                 'val_f1': val_f1,
                 'model_type': model_type,
                 'context_frames': context_frames,
+                'loss_type': loss_type,
             }
             torch.save(checkpoint, os.path.join(output_dir, 'best_model.pt'))
             print(f"  -> New best model saved (F1: {val_f1:.4f})")
@@ -278,6 +328,10 @@ def main():
                         help="Random seed")
     parser.add_argument("--samples-per-epoch", type=int, default=50000,
                         help="Max training samples per epoch (for faster training)")
+    parser.add_argument("--loss", choices=["bce", "focal"], default="bce",
+                        help="Loss function: bce or focal")
+    parser.add_argument("--focal-gamma", type=float, default=2.0,
+                        help="Gamma parameter for focal loss")
 
     args = parser.parse_args()
 
@@ -294,6 +348,8 @@ def main():
         patience=args.patience,
         seed=args.seed,
         samples_per_epoch=args.samples_per_epoch,
+        loss_type=args.loss,
+        focal_gamma=args.focal_gamma,
     )
 
 
