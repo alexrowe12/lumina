@@ -28,6 +28,9 @@ __all__ = [
     "SceneGenerator",
     "generate_show",
     "PALETTES",
+    # Art-Net
+    "ArtNetOutput",
+    "ShowPlayer",
 ]
 
 
@@ -45,4 +48,7 @@ def __getattr__(name):
     elif name in ("SceneTemplate", "SceneGenerator", "generate_show", "PALETTES"):
         from src.dmx import generator
         return getattr(generator, name)
+    elif name in ("ArtNetOutput", "ShowPlayer"):
+        from src.dmx import artnet
+        return getattr(artnet, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
