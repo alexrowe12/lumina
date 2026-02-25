@@ -1,0 +1,90 @@
+# Generic 16-channel moving head profile
+# Typical layout for budget/mid-range moving head spots
+
+name: Generic Moving Head 16CH
+manufacturer: Generic
+fixture_type: moving_head
+channel_count: 16
+
+channels:
+  - type: pan
+    offset: 0
+    min: 0
+    max: 255
+
+  - type: pan_fine
+    offset: 1
+    min: 0
+    max: 255
+
+  - type: tilt
+    offset: 2
+    min: 0
+    max: 255
+
+  - type: tilt_fine
+    offset: 3
+    min: 0
+    max: 255
+
+  - type: speed
+    offset: 4
+    min: 0
+    max: 255
+    default: 0  # Fast movement
+
+  - type: dimmer
+    offset: 5
+    min: 0
+    max: 255
+
+  - type: shutter
+    offset: 6
+    min: 0
+    max: 255
+    # 0-7: closed, 8-15: open, 16-131: strobe slow-fast, 132-255: effects
+
+  - type: red
+    offset: 7
+    min: 0
+    max: 255
+
+  - type: green
+    offset: 8
+    min: 0
+    max: 255
+
+  - type: blue
+    offset: 9
+    min: 0
+    max: 255
+
+  - type: white
+    offset: 10
+    min: 0
+    max: 255
+
+  - type: color_wheel
+    offset: 11
+    min: 0
+    max: 255
+
+  - type: gobo
+    offset: 12
+    min: 0
+    max: 255
+
+  - type: gobo_rotation
+    offset: 13
+    min: 0
+    max: 255
+
+  - type: prism
+    offset: 14
+    min: 0
+    max: 255
+
+  - type: focus
+    offset: 15
+    min: 0
+    max: 255

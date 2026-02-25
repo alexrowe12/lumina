@@ -1,0 +1,19 @@
+# Generic 2-channel smoke/fog machine profile
+
+name: Generic Smoke Machine 2CH
+manufacturer: Generic
+fixture_type: smoke
+channel_count: 2
+
+channels:
+  - type: smoke_output
+    offset: 0
+    min: 0
+    max: 255
+    # 0: off, 1-255: smoke output level
+
+  - type: smoke_fan
+    offset: 1
+    min: 0
+    max: 255
+    # Fan speed for dispersal (0: off, 255: max)

@@ -1,0 +1,50 @@
+# Generic 8-channel RGBW LED par profile
+
+name: Generic Par RGBW 8CH
+manufacturer: Generic
+fixture_type: par
+channel_count: 8
+
+channels:
+  - type: dimmer
+    offset: 0
+    min: 0
+    max: 255
+
+  - type: red
+    offset: 1
+    min: 0
+    max: 255
+
+  - type: green
+    offset: 2
+    min: 0
+    max: 255
+
+  - type: blue
+    offset: 3
+    min: 0
+    max: 255
+
+  - type: white
+    offset: 4
+    min: 0
+    max: 255
+
+  - type: shutter
+    offset: 5
+    min: 0
+    max: 255
+    # 0-15: open, 16-255: strobe slow-fast
+
+  - type: color_wheel
+    offset: 6
+    min: 0
+    max: 255
+    # Built-in color macros
+
+  - type: speed
+    offset: 7
+    min: 0
+    max: 255
+    # Effect speed / auto program speed

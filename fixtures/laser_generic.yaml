@@ -1,0 +1,43 @@
+# Generic 6-channel laser profile
+
+name: Generic Laser 6CH
+manufacturer: Generic
+fixture_type: laser
+channel_count: 6
+
+channels:
+  - type: laser_mode
+    offset: 0
+    min: 0
+    max: 255
+    # 0-49: off, 50-99: auto, 100-149: sound, 150-255: DMX control
+
+  - type: laser_pattern
+    offset: 1
+    min: 0
+    max: 255
+    # Pattern selection (circles, lines, shapes, etc.)
+
+  - type: laser_rotation
+    offset: 2
+    min: 0
+    max: 255
+    # 0-127: CW rotation speed, 128-255: CCW rotation speed
+
+  - type: red
+    offset: 3
+    min: 0
+    max: 255
+    # Red laser intensity
+
+  - type: green
+    offset: 4
+    min: 0
+    max: 255
+    # Green laser intensity
+
+  - type: dimmer
+    offset: 5
+    min: 0
+    max: 255
+    # Overall output level

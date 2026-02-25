@@ -1,0 +1,46 @@
+# Example rig configuration
+# 2 moving heads, 2 pars, 1 laser, 1 smoke machine
+
+name: My Rig
+universes: 1
+
+fixtures:
+  # Moving heads - stage left and right, elevated
+  - id: mh_left
+    profile: moving_head_generic
+    universe: 0
+    address: 1
+    position: [-2.0, 3.0, 0.0]
+
+  - id: mh_right
+    profile: moving_head_generic
+    universe: 0
+    address: 17
+    position: [2.0, 3.0, 0.0]
+
+  # LED pars - front wash, lower position
+  - id: par_left
+    profile: par_rgbw
+    universe: 0
+    address: 33
+    position: [-1.5, 2.0, 0.0]
+
+  - id: par_right
+    profile: par_rgbw
+    universe: 0
+    address: 41
+    position: [1.5, 2.0, 0.0]
+
+  # Laser - center, high up
+  - id: laser_center
+    profile: laser_generic
+    universe: 0
+    address: 49
+    position: [0.0, 4.0, 0.0]
+
+  # Smoke machine - floor level, center
+  - id: smoke_main
+    profile: smoke_machine
+    universe: 0
+    address: 55
+    position: [0.0, 0.0, 0.0]
