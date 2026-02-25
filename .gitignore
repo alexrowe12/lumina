@@ -3,3 +3,4 @@ lumina_plan.md
 *.wav
 data/
 __pycache__
+.DS_Store

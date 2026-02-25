@@ -38,7 +38,7 @@ class HarmonixDataset(Dataset):
         file_ids: Optional[List[str]] = None,
         context_frames: int = 64,  # ~3 seconds of context
         normalize: bool = True,
-        boundary_tolerance_sec: float = 0.5,
+        boundary_tolerance_sec: float = 1.0,
     ):
         """
         Args:
