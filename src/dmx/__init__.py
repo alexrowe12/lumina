@@ -23,6 +23,11 @@ __all__ = [
     "load_rig",
     "save_fixture_profile",
     "save_rig",
+    # Generator
+    "SceneTemplate",
+    "SceneGenerator",
+    "generate_show",
+    "PALETTES",
 ]
 
 
@@ -37,4 +42,7 @@ def __getattr__(name):
     elif name in ("load_fixture_profile", "load_rig", "save_fixture_profile", "save_rig"):
         from src.dmx import config
         return getattr(config, name)
+    elif name in ("SceneTemplate", "SceneGenerator", "generate_show", "PALETTES"):
+        from src.dmx import generator
+        return getattr(generator, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
