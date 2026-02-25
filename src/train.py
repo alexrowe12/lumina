@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.data_loader import get_data_loaders
 from src.model import get_model, count_parameters
+from src.utils import get_device
 
 
 class FocalLoss(nn.Module):
@@ -57,16 +58,6 @@ class FocalLoss(nn.Module):
         loss = alpha_t * focal_weight * bce
 
         return loss.mean()
-
-
-def get_device() -> torch.device:
-    """Get the best available device (MPS > CUDA > CPU)."""
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    elif torch.cuda.is_available():
-        return torch.device("cuda")
-    else:
-        return torch.device("cpu")
 
 
 def train_epoch(

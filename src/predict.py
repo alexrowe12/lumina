@@ -18,25 +18,7 @@ from typing import List, Optional
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.model import get_model
-
-
-# Audio processing parameters (matching Harmonix dataset)
-SAMPLE_RATE = 22050
-HOP_LENGTH = 1024
-N_MELS = 80
-N_FFT = 2048
-FMIN = 0
-FMAX = 8000
-
-
-def get_device() -> torch.device:
-    """Get the best available device."""
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    elif torch.cuda.is_available():
-        return torch.device("cuda")
-    else:
-        return torch.device("cpu")
+from src.utils import get_device, format_time, SAMPLE_RATE, HOP_LENGTH, N_MELS, N_FFT, FMIN, FMAX
 
 
 def compute_mel_spectrogram(audio_path: str) -> np.ndarray:
@@ -183,13 +165,6 @@ def peak_pick_boundaries(
             i += 1
 
     return boundaries
-
-
-def format_time(seconds: float) -> str:
-    """Format seconds as MM:SS."""
-    minutes = int(seconds // 60)
-    secs = int(seconds % 60)
-    return f"{minutes}:{secs:02d}"
 
 
 def detect_boundaries(

@@ -12,15 +12,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from typing import Tuple, List, Optional
 
-
-# Harmonix spectrogram parameters (derived from data)
-SAMPLE_RATE = 22050
-HOP_LENGTH = 1024
-FRAME_RATE = SAMPLE_RATE / HOP_LENGTH  # ~21.5 fps
-FRAME_DURATION = HOP_LENGTH / SAMPLE_RATE  # ~0.0464 seconds per frame
-
-# Boundary detection parameters
-BOUNDARY_TOLERANCE_FRAMES = 2  # Frames within this distance are labeled as boundary
+from src.utils import SAMPLE_RATE, HOP_LENGTH, FRAME_RATE
 
 
 class HarmonixDataset(Dataset):
