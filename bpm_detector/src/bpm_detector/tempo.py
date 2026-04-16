@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .grid import build_bar_timestamps
 from .models import AudioData, TempoResult
 
 
@@ -38,11 +39,18 @@ def detect_tempo(audio: AudioData, min_bpm: int = 60, max_bpm: int = 200) -> Tem
         start_offset_seconds=audio.start_offset_seconds,
         max_timestamp_seconds=audio.start_offset_seconds + audio.duration_seconds,
     )
+    beats_per_bar = 4
+    bar_timestamps = build_bar_timestamps(
+        beat_timestamps=beat_timestamps,
+        beats_per_bar=beats_per_bar,
+    )
 
     return TempoResult(
         bpm=bpm,
         rounded_bpm=round(bpm),
         beat_timestamps=beat_timestamps,
+        bar_timestamps=bar_timestamps,
+        beats_per_bar=beats_per_bar,
     )
 
 

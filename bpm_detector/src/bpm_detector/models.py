@@ -20,3 +20,5 @@ class TempoResult:
     bpm: float
     rounded_bpm: int
     beat_timestamps: list[float]
+    bar_timestamps: list[float]
+    beats_per_bar: int
