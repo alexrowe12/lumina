@@ -1,12 +1,15 @@
 # bpm-detector
 
-CLI tool for detecting BPM, beat timestamps, and eventually section boundaries from WAV files.
+CLI tool for detecting BPM, beat timestamps, and section boundaries from WAV files.
 
 ## Status
 
-The BPM-detection foundation is in place. WAV loading, preprocessing, global tempo
-detection, and beat timestamp extraction are implemented. The next stage is structural
-section detection for prerecorded tracks.
+The prerecorded analysis foundation is in place. The CLI can detect:
+
+- global BPM
+- beat timestamps
+- bar-aligned structural section boundaries
+- section debug output with novelty scores and selected bars
 
 ## Setup
 
@@ -21,6 +24,8 @@ After that, use the installed console command directly:
 ```bash
 bpm-detector detect path/to/file.wav
 bpm-detector detect path/to/file.wav --show-beats
+bpm-detector detect path/to/file.wav --show-sections
+bpm-detector detect path/to/file.wav --show-sections --debug-sections
 ```
 
 ## Tests
@@ -29,8 +34,8 @@ bpm-detector detect path/to/file.wav --show-beats
 pytest -q
 ```
 
-The test suite generates synthetic click-track WAV files and checks both BPM accuracy
-and beat timestamp spacing.
+The test suite generates synthetic WAV fixtures and checks BPM accuracy, beat/bar timing,
+feature extraction, novelty scoring, section selection, and CLI output.
 
 Current CLI output:
 
@@ -52,6 +57,23 @@ Beat timestamps (seconds):
 0.941
 1.408
 ...
+```
+
+With `--show-sections --debug-sections`:
+
+```text
+Estimated BPM: 120.27
+Rounded BPM: 120
+Beats detected: 33
+
+Section boundaries (seconds):
+15.999
+
+Section debug:
+bar=1 time=0.115 raw=0.000 selected=no
+bar=2 time=2.005 raw=0.098 selected=no
+...
+bar=9 time=15.999 raw=1.000 weighted=1.388 selected=yes
 ```
 
 Beat timestamps are reported in raw seconds relative to the original WAV file, even if
