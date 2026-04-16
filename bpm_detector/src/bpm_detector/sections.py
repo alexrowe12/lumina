@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .models import AudioData, BarFeatures, NoveltyCurve, TempoResult
+from .models import AudioData, BarFeatures, NoveltyCurve, SectionBoundary, TempoResult
 
 
 def extract_bar_features(
@@ -108,6 +108,48 @@ def compute_novelty_curve(
     )
 
 
+def select_section_boundaries(
+    novelty_curve: NoveltyCurve,
+    *,
+    min_score: float = 0.35,
+    min_spacing_bars: int = 4,
+    max_boundaries: int | None = None,
+) -> list[SectionBoundary]:
+    """Select musically plausible section boundaries from a novelty curve."""
+
+    if not 0.0 <= min_score <= 1.0:
+        raise ValueError("min_score must be between 0.0 and 1.0.")
+    if min_spacing_bars < 1:
+        raise ValueError("min_spacing_bars must be at least 1.")
+    if max_boundaries is not None and max_boundaries < 1:
+        raise ValueError("max_boundaries must be positive when provided.")
+
+    candidates: list[SectionBoundary] = []
+    for bar_index, raw_score in enumerate(novelty_curve.scores):
+        if raw_score < min_score:
+            continue
+        if not _is_local_peak(novelty_curve.scores, bar_index):
+            continue
+
+        weighted_score = raw_score * _metric_weight(bar_index)
+        candidates.append(
+            SectionBoundary(
+                timestamp=novelty_curve.timestamps[bar_index],
+                bar_index=bar_index,
+                raw_score=float(raw_score),
+                weighted_score=float(weighted_score),
+            )
+        )
+
+    selected = _apply_spacing_rule(
+        candidates=candidates,
+        min_spacing_bars=min_spacing_bars,
+        max_boundaries=max_boundaries,
+    )
+    selected.sort(key=lambda boundary: boundary.timestamp)
+    return selected
+
+
 def _resolve_bar_end_timestamp(
     bar_index: int,
     bar_starts: list[float],
@@ -203,6 +245,46 @@ def _normalize_feature_matrix_rows(values: np.ndarray) -> np.ndarray:
     row_sums = values.sum(axis=1, keepdims=True)
     safe_row_sums = np.where(row_sums > 0.0, row_sums, 1.0)
     return values / safe_row_sums
+
+
+def _is_local_peak(values: np.ndarray, index: int) -> bool:
+    current = float(values[index])
+    previous = float(values[index - 1]) if index > 0 else float("-inf")
+    following = float(values[index + 1]) if index + 1 < len(values) else float("-inf")
+    return current >= previous and current >= following and current > 0.0
+
+
+def _metric_weight(bar_index: int) -> float:
+    one_based_bar = bar_index + 1
+    weight = 1.0
+    if one_based_bar % 2 == 1:
+        weight *= 1.05
+    if one_based_bar % 4 == 1:
+        weight *= 1.12
+    if one_based_bar % 8 == 1:
+        weight *= 1.18
+    return weight
+
+
+def _apply_spacing_rule(
+    candidates: list[SectionBoundary],
+    min_spacing_bars: int,
+    max_boundaries: int | None,
+) -> list[SectionBoundary]:
+    selected: list[SectionBoundary] = []
+
+    for candidate in sorted(
+        candidates,
+        key=lambda boundary: (boundary.weighted_score, boundary.raw_score, -boundary.timestamp),
+        reverse=True,
+    ):
+        if any(abs(candidate.bar_index - chosen.bar_index) < min_spacing_bars for chosen in selected):
+            continue
+        selected.append(candidate)
+        if max_boundaries is not None and len(selected) >= max_boundaries:
+            break
+
+    return selected
 
 
 def _zscore_features(values: np.ndarray) -> np.ndarray:

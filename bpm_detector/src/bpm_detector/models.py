@@ -56,3 +56,13 @@ class NoveltyCurve:
 
     timestamps: list[float]
     scores: np.ndarray
+
+
+@dataclass(slots=True)
+class SectionBoundary:
+    """A selected structural boundary candidate."""
+
+    timestamp: float
+    bar_index: int
+    raw_score: float
+    weighted_score: float

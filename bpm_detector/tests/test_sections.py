@@ -4,8 +4,12 @@ import numpy as np
 import pytest
 
 from bpm_detector.audio import load_audio
-from bpm_detector.models import BarFeatures, TempoResult
-from bpm_detector.sections import compute_novelty_curve, extract_bar_features
+from bpm_detector.models import BarFeatures, NoveltyCurve, TempoResult
+from bpm_detector.sections import (
+    compute_novelty_curve,
+    extract_bar_features,
+    select_section_boundaries,
+)
 
 
 def test_extract_bar_features_returns_expected_shapes(tone_sections_factory) -> None:
@@ -161,3 +165,103 @@ def test_compute_novelty_curve_requires_positive_window() -> None:
 
     with pytest.raises(ValueError, match="window_bars must be positive"):
         compute_novelty_curve(features, window_bars=0)
+
+
+def test_select_section_boundaries_returns_transition_timestamp(tone_sections_factory) -> None:
+    wav_path = tone_sections_factory(
+        section_frequencies_hz=[110.0, 110.0, 110.0, 1760.0, 1760.0, 1760.0],
+        bar_duration_seconds=2.0,
+    )
+    audio = load_audio(wav_path)
+    tempo_result = TempoResult(
+        bpm=120.0,
+        rounded_bpm=120,
+        beat_timestamps=[
+            0.0,
+            0.5,
+            1.0,
+            1.5,
+            2.0,
+            2.5,
+            3.0,
+            3.5,
+            4.0,
+            4.5,
+            5.0,
+            5.5,
+            6.0,
+            6.5,
+            7.0,
+            7.5,
+            8.0,
+            8.5,
+            9.0,
+            9.5,
+            10.0,
+            10.5,
+            11.0,
+            11.5,
+        ],
+        bar_timestamps=[0.0, 2.0, 4.0, 6.0, 8.0, 10.0],
+        beats_per_bar=4,
+    )
+
+    features = extract_bar_features(audio, tempo_result)
+    novelty = compute_novelty_curve(features, window_bars=2)
+    boundaries = select_section_boundaries(novelty, min_score=0.4, min_spacing_bars=3)
+
+    assert len(boundaries) == 1
+    assert boundaries[0].timestamp == pytest.approx(6.0, abs=0.01)
+    assert boundaries[0].bar_index == 3
+    assert boundaries[0].weighted_score >= boundaries[0].raw_score
+
+
+def test_select_section_boundaries_prefers_phrase_aligned_peak() -> None:
+    novelty = NoveltyCurve(
+        timestamps=[0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0],
+        scores=np.array([0.0, 0.0, 0.72, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0], dtype=np.float64),
+    )
+
+    boundaries = select_section_boundaries(
+        novelty,
+        min_score=0.5,
+        min_spacing_bars=8,
+        max_boundaries=1,
+    )
+
+    assert len(boundaries) == 1
+    assert boundaries[0].bar_index == 2
+    assert boundaries[0].timestamp == pytest.approx(4.0, abs=0.01)
+
+
+def test_select_section_boundaries_enforces_spacing_by_weighted_priority() -> None:
+    novelty = NoveltyCurve(
+        timestamps=[0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0],
+        scores=np.array([0.0, 0.55, 0.0, 0.78, 0.0, 0.9, 0.0], dtype=np.float64),
+    )
+
+    boundaries = select_section_boundaries(
+        novelty,
+        min_score=0.5,
+        min_spacing_bars=3,
+    )
+
+    assert [boundary.bar_index for boundary in boundaries] == [1, 5]
+    assert boundaries[0].timestamp == pytest.approx(2.0, abs=0.01)
+    assert boundaries[1].timestamp == pytest.approx(10.0, abs=0.01)
+
+
+def test_select_section_boundaries_validates_arguments() -> None:
+    novelty = NoveltyCurve(
+        timestamps=[0.0],
+        scores=np.array([0.0], dtype=np.float64),
+    )
+
+    with pytest.raises(ValueError, match="min_score must be between 0.0 and 1.0"):
+        select_section_boundaries(novelty, min_score=1.2)
+
+    with pytest.raises(ValueError, match="min_spacing_bars must be at least 1"):
+        select_section_boundaries(novelty, min_spacing_bars=0)
+
+    with pytest.raises(ValueError, match="max_boundaries must be positive"):
+        select_section_boundaries(novelty, max_boundaries=0)
