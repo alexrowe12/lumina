@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+import numpy as np
+
 
 @dataclass(slots=True)
 class AudioData:
@@ -22,3 +24,27 @@ class TempoResult:
     beat_timestamps: list[float]
     bar_timestamps: list[float]
     beats_per_bar: int
+
+
+@dataclass(slots=True)
+class BarFeatures:
+    """Per-bar audio features for downstream section analysis."""
+
+    timestamps: list[float]
+    rms_energy: np.ndarray
+    spectral_centroid: np.ndarray
+    spectral_rolloff: np.ndarray
+    band_energies: np.ndarray
+
+    @property
+    def vectors(self) -> np.ndarray:
+        """Return a stacked feature matrix with one row per bar."""
+
+        return np.column_stack(
+            (
+                self.rms_energy,
+                self.spectral_centroid,
+                self.spectral_rolloff,
+                self.band_energies,
+            )
+        )
