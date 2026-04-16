@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .audio import AudioLoadError, load_audio
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -27,7 +29,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "detect":
-        parser.error("BPM detection is not implemented yet.")
+        try:
+            audio = load_audio(args.path)
+        except AudioLoadError as exc:
+            parser.exit(status=2, message=f"error: {exc}\n")
+
+        parser.exit(
+            status=2,
+            message=(
+                "error: BPM detection is not implemented yet. "
+                f"Loaded {len(audio.samples)} mono samples at {audio.sample_rate} Hz.\n"
+            ),
+        )
 
     return 0
-

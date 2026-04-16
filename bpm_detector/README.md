@@ -4,7 +4,8 @@ CLI tool for detecting BPM and beat timestamps from WAV files.
 
 ## Status
 
-Project scaffold in progress. Detection logic is not implemented yet.
+Project scaffold is in place. WAV loading and preprocessing are implemented, but BPM
+detection is not implemented yet.
 
 ## Setup
 
@@ -25,3 +26,6 @@ PYTHONPATH=src python -m bpm_detector detect path/to/file.wav
 In a fully provisioned environment, you can install the package in editable mode and run
 `python -m bpm_detector ...` normally. In this sandbox, offline verification uses
 `PYTHONPATH=src` because the local virtual environment does not include packaging tools.
+
+Current WAV support is limited to uncompressed PCM sample widths that Python's standard
+library `wave` module can read.
