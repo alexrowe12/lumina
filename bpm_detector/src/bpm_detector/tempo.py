@@ -30,11 +30,17 @@ def detect_tempo(audio: AudioData, min_bpm: int = 60, max_bpm: int = 200) -> Tem
         min_bpm=min_bpm,
         max_bpm=max_bpm,
     )
+    beat_timestamps = extract_beat_timestamps(
+        onset_envelope=onset_envelope,
+        envelope_rate=audio.sample_rate / hop_size,
+        bpm=bpm,
+        audio_duration_seconds=audio.duration_seconds,
+    )
 
     return TempoResult(
         bpm=bpm,
         rounded_bpm=round(bpm),
-        beat_timestamps=[],
+        beat_timestamps=beat_timestamps,
     )
 
 
@@ -106,6 +112,47 @@ def estimate_bpm_from_onset_envelope(
     return (60.0 * envelope_rate) / best_lag
 
 
+def extract_beat_timestamps(
+    onset_envelope: list[float],
+    envelope_rate: float,
+    bpm: float,
+    audio_duration_seconds: float,
+) -> list[float]:
+    """Estimate beat positions in seconds from a tempo-locked onset envelope."""
+
+    if envelope_rate <= 0:
+        raise TempoDetectionError("Envelope rate must be positive.")
+    if bpm <= 0:
+        raise TempoDetectionError("BPM must be positive.")
+    if not onset_envelope:
+        return []
+
+    beat_period_frames = max(1, round((60.0 * envelope_rate) / bpm))
+    phase = _find_best_phase(onset_envelope, beat_period_frames)
+    peak_indices = _find_onset_peaks(onset_envelope)
+    snapped_indices = _snap_beats_to_peaks(
+        onset_envelope=onset_envelope,
+        peak_indices=peak_indices,
+        beat_period_frames=beat_period_frames,
+        phase=phase,
+    )
+
+    timestamps: list[float] = []
+    last_timestamp = float("-inf")
+    minimum_gap_seconds = (60.0 / bpm) * 0.5
+
+    for frame_index in snapped_indices:
+        timestamp = frame_index / envelope_rate
+        if timestamp > audio_duration_seconds:
+            continue
+        if timestamp - last_timestamp < minimum_gap_seconds:
+            continue
+        timestamps.append(timestamp)
+        last_timestamp = timestamp
+
+    return timestamps
+
+
 def _choose_hop_size(sample_rate: int) -> int:
     target_hz = 200
     return max(128, sample_rate // target_hz)
@@ -146,3 +193,107 @@ def _tempo_preference_weight(bpm: float) -> float:
 
     distance_from_center = abs(bpm - 120.0)
     return max(0.6, 1.0 - (distance_from_center / 240.0))
+
+
+def _find_best_phase(onset_envelope: list[float], beat_period_frames: int) -> int:
+    best_phase = 0
+    best_score = float("-inf")
+
+    for phase in range(beat_period_frames):
+        score = 0.0
+        for index in range(phase, len(onset_envelope), beat_period_frames):
+            score += onset_envelope[index]
+        if score > best_score:
+            best_score = score
+            best_phase = phase
+
+    return best_phase
+
+
+def _find_onset_peaks(onset_envelope: list[float]) -> list[int]:
+    if len(onset_envelope) < 3:
+        return [index for index, value in enumerate(onset_envelope) if value > 0.0]
+
+    mean_strength = sum(onset_envelope) / len(onset_envelope)
+    threshold = max(0.1, mean_strength * 1.5)
+
+    peaks: list[int] = []
+    for index in range(1, len(onset_envelope) - 1):
+        value = onset_envelope[index]
+        if value < threshold:
+            continue
+        if value >= onset_envelope[index - 1] and value >= onset_envelope[index + 1]:
+            peaks.append(index)
+
+    return peaks
+
+
+def _snap_beats_to_peaks(
+    onset_envelope: list[float],
+    peak_indices: list[int],
+    beat_period_frames: int,
+    phase: int,
+) -> list[int]:
+    search_radius = max(1, beat_period_frames // 4)
+    peak_set = set(peak_indices)
+    snapped: list[int] = []
+    start_index = phase
+
+    while start_index - beat_period_frames >= 0:
+        start_index -= beat_period_frames
+
+    for expected_index in range(start_index, len(onset_envelope), beat_period_frames):
+        best_index = _find_best_local_beat(
+            onset_envelope=onset_envelope,
+            peak_set=peak_set,
+            expected_index=expected_index,
+            search_radius=search_radius,
+        )
+
+        if snapped and best_index == snapped[-1]:
+            continue
+        snapped.append(best_index)
+
+    if snapped:
+        expected_index = snapped[0] - beat_period_frames
+        while expected_index >= -search_radius:
+            best_index = _find_best_local_beat(
+                onset_envelope=onset_envelope,
+                peak_set=peak_set,
+                expected_index=expected_index,
+                search_radius=search_radius,
+            )
+            if best_index < snapped[0]:
+                snapped.insert(0, best_index)
+            expected_index -= beat_period_frames
+
+    return snapped
+
+
+def _find_best_local_beat(
+    onset_envelope: list[float],
+    peak_set: set[int],
+    expected_index: int,
+    search_radius: int,
+) -> int:
+    window_start = max(0, expected_index - search_radius)
+    window_end = min(len(onset_envelope) - 1, expected_index + search_radius)
+
+    best_index = None
+    best_value = -1.0
+
+    for candidate in range(window_start, window_end + 1):
+        if candidate not in peak_set:
+            continue
+        value = onset_envelope[candidate]
+        if value > best_value:
+            best_value = value
+            best_index = candidate
+
+    if best_index is not None:
+        return best_index
+
+    return max(
+        range(window_start, window_end + 1),
+        key=lambda candidate: onset_envelope[candidate],
+    )

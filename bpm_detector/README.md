@@ -5,7 +5,8 @@ CLI tool for detecting BPM and beat timestamps from WAV files.
 ## Status
 
 Project scaffold is in place. WAV loading, preprocessing, and first-pass global BPM
-detection are implemented. Beat timestamp output is not implemented yet.
+detection are implemented. Beat timestamps are extracted internally, but the CLI does
+not print the full timestamp list yet.
 
 ## Setup
 
@@ -26,6 +27,7 @@ Current CLI output:
 ```text
 Estimated BPM: 127.83
 Rounded BPM: 128
+Beats detected: 243
 ```
 
 ## Notes

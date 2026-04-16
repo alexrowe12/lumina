@@ -42,6 +42,7 @@ def main(argv: list[str] | None = None) -> int:
 
         print(f"Estimated BPM: {result.bpm:.2f}")
         print(f"Rounded BPM: {result.rounded_bpm}")
+        print(f"Beats detected: {len(result.beat_timestamps)}")
         return 0
 
     return 0
