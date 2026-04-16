@@ -167,6 +167,27 @@ def test_compute_novelty_curve_requires_positive_window() -> None:
         compute_novelty_curve(features, window_bars=0)
 
 
+def test_extract_bar_features_validates_band_edges(tone_sections_factory) -> None:
+    wav_path = tone_sections_factory(
+        section_frequencies_hz=[110.0, 110.0, 1760.0, 1760.0],
+        bar_duration_seconds=2.0,
+    )
+    audio = load_audio(wav_path)
+    tempo_result = TempoResult(
+        bpm=120.0,
+        rounded_bpm=120,
+        beat_timestamps=[0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5],
+        bar_timestamps=[0.0, 2.0, 4.0, 6.0],
+        beats_per_bar=4,
+    )
+
+    with pytest.raises(ValueError, match="strictly increasing"):
+        extract_bar_features(audio, tempo_result, band_edges_hz=(400.0, 150.0))
+
+    with pytest.raises(ValueError, match="positive values"):
+        extract_bar_features(audio, tempo_result, band_edges_hz=(150.0, 0.0, 400.0))
+
+
 def test_select_section_boundaries_returns_transition_timestamp(tone_sections_factory) -> None:
     wav_path = tone_sections_factory(
         section_frequencies_hz=[110.0, 110.0, 110.0, 1760.0, 1760.0, 1760.0],
@@ -265,3 +286,13 @@ def test_select_section_boundaries_validates_arguments() -> None:
 
     with pytest.raises(ValueError, match="max_boundaries must be positive"):
         select_section_boundaries(novelty, max_boundaries=0)
+
+
+def test_select_section_boundaries_validates_curve_lengths() -> None:
+    novelty = NoveltyCurve(
+        timestamps=[0.0, 2.0],
+        scores=np.array([0.0], dtype=np.float64),
+    )
+
+    with pytest.raises(ValueError, match="same length"):
+        select_section_boundaries(novelty)

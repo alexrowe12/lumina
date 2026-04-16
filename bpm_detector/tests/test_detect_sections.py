@@ -19,6 +19,9 @@ def test_detect_sections_returns_full_analysis_result(structured_sections_factor
     assert analysis.bar_features.timestamps == tempo_result.bar_timestamps
     assert list(analysis.novelty_curve.timestamps) == tempo_result.bar_timestamps
     assert analysis.section_boundaries
+    assert analysis.section_timestamps == [
+        boundary.timestamp for boundary in analysis.section_boundaries
+    ]
     assert analysis.section_boundaries[-1].timestamp > 0.0
 
 

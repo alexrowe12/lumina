@@ -7,7 +7,12 @@ from pathlib import Path
 
 from .audio import AudioLoadError, load_audio
 from .models import SectionAnalysisResult, SectionBoundary, TempoResult
-from .sections import detect_sections
+from .sections import (
+    DEFAULT_MIN_SECTION_SCORE,
+    DEFAULT_MIN_SECTION_SPACING_BARS,
+    DEFAULT_NOVELTY_WINDOW_BARS,
+    detect_sections,
+)
 from .tempo import TempoDetectionError, detect_tempo
 
 
@@ -59,7 +64,13 @@ def main(argv: list[str] | None = None) -> int:
 
         section_analysis = None
         if args.show_sections or args.debug_sections:
-            section_analysis = detect_sections(audio, result)
+            section_analysis = detect_sections(
+                audio,
+                result,
+                novelty_window_bars=DEFAULT_NOVELTY_WINDOW_BARS,
+                min_score=DEFAULT_MIN_SECTION_SCORE,
+                min_spacing_bars=DEFAULT_MIN_SECTION_SPACING_BARS,
+            )
 
         _print_summary(result)
         if args.show_beats:
@@ -89,6 +100,9 @@ def _print_beat_timestamps(beat_timestamps: list[float]) -> None:
 def _print_section_timestamps(section_boundaries: list[SectionBoundary]) -> None:
     print()
     print("Section boundaries (seconds):")
+    if not section_boundaries:
+        print("(none)")
+        return
     for boundary in section_boundaries:
         print(f"{boundary.timestamp:.3f}")
 

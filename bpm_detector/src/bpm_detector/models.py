@@ -76,3 +76,9 @@ class SectionAnalysisResult:
     bar_features: BarFeatures
     novelty_curve: NoveltyCurve
     section_boundaries: list[SectionBoundary]
+
+    @property
+    def section_timestamps(self) -> list[float]:
+        """Return selected section boundaries as raw-second timestamps."""
+
+        return [boundary.timestamp for boundary in self.section_boundaries]

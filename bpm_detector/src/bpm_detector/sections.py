@@ -13,11 +13,16 @@ from .models import (
     TempoResult,
 )
 
+DEFAULT_BAND_EDGES_HZ = (150.0, 400.0, 1_000.0, 2_500.0)
+DEFAULT_NOVELTY_WINDOW_BARS = 2
+DEFAULT_MIN_SECTION_SCORE = 0.4
+DEFAULT_MIN_SECTION_SPACING_BARS = 4
+
 
 def extract_bar_features(
     audio: AudioData,
     tempo_result: TempoResult,
-    band_edges_hz: tuple[float, ...] = (150.0, 400.0, 1_000.0, 2_500.0),
+    band_edges_hz: tuple[float, ...] = DEFAULT_BAND_EDGES_HZ,
 ) -> BarFeatures:
     """Compute beat-grid-aligned per-bar features for structural analysis."""
 
@@ -25,6 +30,7 @@ def extract_bar_features(
         raise ValueError("Audio sample rate must be positive.")
     if not tempo_result.bar_timestamps:
         raise ValueError("Tempo result does not contain any bar timestamps.")
+    _validate_band_edges(band_edges_hz)
 
     sample_rate = audio.sample_rate
     samples = np.asarray(audio.samples, dtype=np.float64)
@@ -130,6 +136,8 @@ def select_section_boundaries(
         raise ValueError("min_spacing_bars must be at least 1.")
     if max_boundaries is not None and max_boundaries < 1:
         raise ValueError("max_boundaries must be positive when provided.")
+    if len(novelty_curve.timestamps) != len(novelty_curve.scores):
+        raise ValueError("Novelty curve timestamps and scores must be the same length.")
 
     candidates: list[SectionBoundary] = []
     for bar_index, raw_score in enumerate(novelty_curve.scores):
@@ -161,9 +169,9 @@ def detect_sections(
     audio: AudioData,
     tempo_result: TempoResult,
     *,
-    novelty_window_bars: int = 2,
-    min_score: float = 0.4,
-    min_spacing_bars: int = 4,
+    novelty_window_bars: int = DEFAULT_NOVELTY_WINDOW_BARS,
+    min_score: float = DEFAULT_MIN_SECTION_SCORE,
+    min_spacing_bars: int = DEFAULT_MIN_SECTION_SPACING_BARS,
     max_boundaries: int | None = None,
 ) -> SectionAnalysisResult:
     """Run the full section-analysis pipeline for a loaded track."""
@@ -282,6 +290,16 @@ def _normalize_feature_matrix_rows(values: np.ndarray) -> np.ndarray:
     row_sums = values.sum(axis=1, keepdims=True)
     safe_row_sums = np.where(row_sums > 0.0, row_sums, 1.0)
     return values / safe_row_sums
+
+
+def _validate_band_edges(band_edges_hz: tuple[float, ...]) -> None:
+    previous_edge = 0.0
+    for edge in band_edges_hz:
+        if edge <= 0.0:
+            raise ValueError("band_edges_hz must contain only positive values.")
+        if edge <= previous_edge:
+            raise ValueError("band_edges_hz must be strictly increasing.")
+        previous_edge = edge
 
 
 def _is_local_peak(values: np.ndarray, index: int) -> bool:

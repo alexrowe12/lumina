@@ -39,8 +39,8 @@ audio = load_audio("path/to/file.wav")
 tempo = detect_tempo(audio)
 analysis = detect_sections(audio, tempo)
 
-for boundary in analysis.section_boundaries:
-    print(boundary.timestamp, boundary.raw_score, boundary.weighted_score)
+for timestamp in analysis.section_timestamps:
+    print(timestamp)
 ```
 
 ## Tests
@@ -89,6 +89,13 @@ bar=1 time=0.115 raw=0.000 selected=no
 bar=2 time=2.005 raw=0.098 selected=no
 ...
 bar=9 time=15.999 raw=1.000 weighted=1.388 selected=yes
+```
+
+If no section boundaries pass the current thresholds, the CLI prints:
+
+```text
+Section boundaries (seconds):
+(none)
 ```
 
 Beat timestamps are reported in raw seconds relative to the original WAV file, even if
