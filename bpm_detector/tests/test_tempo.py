@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+import pytest
+
+from bpm_detector.audio import load_audio
+from bpm_detector.tempo import detect_tempo
+
+
+@pytest.mark.parametrize(
+    ("bpm", "duration_seconds"),
+    [
+        (90, 12),
+        (120, 10),
+        (174, 10),
+    ],
+)
+def test_detect_tempo_matches_click_track_bpm(
+    click_track_factory,
+    bpm: int,
+    duration_seconds: int,
+) -> None:
+    wav_path = click_track_factory(bpm=bpm, duration_seconds=duration_seconds)
+
+    result = detect_tempo(load_audio(wav_path))
+
+    assert result.bpm == pytest.approx(bpm, abs=1.0)
+    assert result.rounded_bpm == round(result.bpm)
+
+
+@pytest.mark.parametrize(
+    ("bpm", "duration_seconds"),
+    [
+        (90, 12),
+        (120, 10),
+    ],
+)
+def test_detect_tempo_returns_regular_beat_timestamps(
+    click_track_factory,
+    bpm: int,
+    duration_seconds: int,
+) -> None:
+    wav_path = click_track_factory(bpm=bpm, duration_seconds=duration_seconds)
+
+    result = detect_tempo(load_audio(wav_path))
+    expected_interval = 60.0 / bpm
+
+    assert result.beat_timestamps
+    assert result.beat_timestamps[0] == pytest.approx(0.0, abs=0.05)
+
+    intervals = [
+        current - previous
+        for previous, current in zip(result.beat_timestamps, result.beat_timestamps[1:])
+    ]
+
+    assert intervals
+    for interval in intervals:
+        assert interval == pytest.approx(expected_interval, abs=0.08)
+
+    expected_beats = int(duration_seconds / expected_interval)
+    assert len(result.beat_timestamps) == pytest.approx(expected_beats, abs=1)

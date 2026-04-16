@@ -23,6 +23,15 @@ PYTHONPATH=src python -m bpm_detector detect path/to/file.wav
 PYTHONPATH=src python -m bpm_detector detect path/to/file.wav --show-beats
 ```
 
+## Tests
+
+```bash
+PYTHONPATH=src python -m pytest -q
+```
+
+The test suite generates synthetic click-track WAV files and checks both BPM accuracy
+and beat timestamp spacing.
+
 Current CLI output:
 
 ```text
