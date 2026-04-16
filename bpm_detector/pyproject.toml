@@ -5,10 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bpm-detector"
 version = "0.1.0"
-description = "CLI tool for detecting BPM and beat timestamps from WAV files."
+description = "CLI tool for detecting BPM, beat timestamps, and section boundaries from WAV files."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "numpy>=2.0,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9",
+]
 
 [project.scripts]
 bpm-detector = "bpm_detector.cli:main"
