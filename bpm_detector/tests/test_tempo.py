@@ -58,3 +58,12 @@ def test_detect_tempo_returns_regular_beat_timestamps(
 
     expected_beats = int(duration_seconds / expected_interval)
     assert len(result.beat_timestamps) == pytest.approx(expected_beats, abs=1)
+
+
+def test_detect_tempo_preserves_original_file_timestamps(click_track_factory) -> None:
+    wav_path = click_track_factory(bpm=120, duration_seconds=8, leading_silence_seconds=2.0)
+
+    result = detect_tempo(load_audio(wav_path))
+
+    assert result.beat_timestamps
+    assert result.beat_timestamps[0] == pytest.approx(2.0, abs=0.06)

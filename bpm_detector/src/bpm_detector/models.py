@@ -10,6 +10,7 @@ class AudioData:
     sample_rate: int
     samples: list[float]
     duration_seconds: float
+    start_offset_seconds: float
 
 
 @dataclass(slots=True)

@@ -20,21 +20,23 @@ def detect_tempo(audio: AudioData, min_bpm: int = 60, max_bpm: int = 200) -> Tem
         raise TempoDetectionError("Invalid BPM search range.")
 
     hop_size = _choose_hop_size(audio.sample_rate)
+    envelope_rate = audio.sample_rate / hop_size
     onset_envelope = compute_onset_envelope(audio.samples, hop_size)
     if len(onset_envelope) < 8:
         raise TempoDetectionError("Audio does not contain enough rhythmic information.")
 
     bpm = estimate_bpm_from_onset_envelope(
         onset_envelope,
-        envelope_rate=audio.sample_rate / hop_size,
+        envelope_rate=envelope_rate,
         min_bpm=min_bpm,
         max_bpm=max_bpm,
     )
     beat_timestamps = extract_beat_timestamps(
         onset_envelope=onset_envelope,
-        envelope_rate=audio.sample_rate / hop_size,
+        envelope_rate=envelope_rate,
         bpm=bpm,
-        audio_duration_seconds=audio.duration_seconds,
+        start_offset_seconds=audio.start_offset_seconds,
+        max_timestamp_seconds=audio.start_offset_seconds + audio.duration_seconds,
     )
 
     return TempoResult(
@@ -116,7 +118,8 @@ def extract_beat_timestamps(
     onset_envelope: list[float],
     envelope_rate: float,
     bpm: float,
-    audio_duration_seconds: float,
+    start_offset_seconds: float,
+    max_timestamp_seconds: float,
 ) -> list[float]:
     """Estimate beat positions in seconds from a tempo-locked onset envelope."""
 
@@ -142,8 +145,8 @@ def extract_beat_timestamps(
     minimum_gap_seconds = (60.0 / bpm) * 0.5
 
     for frame_index in snapped_indices:
-        timestamp = frame_index / envelope_rate
-        if timestamp > audio_duration_seconds:
+        timestamp = start_offset_seconds + (frame_index / envelope_rate)
+        if timestamp > max_timestamp_seconds:
             continue
         if timestamp - last_timestamp < minimum_gap_seconds:
             continue

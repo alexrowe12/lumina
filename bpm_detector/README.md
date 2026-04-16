@@ -54,6 +54,9 @@ Beat timestamps (seconds):
 ...
 ```
 
+Beat timestamps are reported in raw seconds relative to the original WAV file, even if
+leading or trailing silence is trimmed during preprocessing.
+
 ## Notes
 
 In a fully provisioned environment, you can install the package in editable mode and run

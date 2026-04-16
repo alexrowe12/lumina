@@ -27,21 +27,33 @@ def load_audio(path: str | Path) -> AudioData:
 
     interleaved_samples = _decode_pcm_frames(raw_frames, sample_width)
     mono_samples = _mix_to_mono(interleaved_samples, channel_count)
-    trimmed_samples = trim_silence(mono_samples)
+    trimmed_samples, start_sample_index = _trim_silence_with_offset(mono_samples)
     duration_seconds = len(trimmed_samples) / sample_rate if sample_rate else 0.0
+    start_offset_seconds = start_sample_index / sample_rate if sample_rate else 0.0
 
     return AudioData(
         sample_rate=sample_rate,
         samples=trimmed_samples,
         duration_seconds=duration_seconds,
+        start_offset_seconds=start_offset_seconds,
     )
 
 
 def trim_silence(samples: list[float], threshold: float = 0.01) -> list[float]:
     """Remove leading and trailing samples below a simple absolute-amplitude threshold."""
 
+    trimmed_samples, _ = _trim_silence_with_offset(samples, threshold=threshold)
+    return trimmed_samples
+
+
+def _trim_silence_with_offset(
+    samples: list[float],
+    threshold: float = 0.01,
+) -> tuple[list[float], int]:
+    """Trim quiet edges and return both the trimmed audio and the start sample offset."""
+
     if not samples:
-        return []
+        return [], 0
 
     start_index = 0
     end_index = len(samples) - 1
@@ -53,9 +65,9 @@ def trim_silence(samples: list[float], threshold: float = 0.01) -> list[float]:
         end_index -= 1
 
     if start_index > end_index:
-        return []
+        return [], 0
 
-    return samples[start_index : end_index + 1]
+    return samples[start_index : end_index + 1], start_index
 
 
 def _validate_wav_path(path: Path) -> None:
