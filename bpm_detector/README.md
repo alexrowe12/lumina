@@ -4,8 +4,8 @@ CLI tool for detecting BPM and beat timestamps from WAV files.
 
 ## Status
 
-Project scaffold is in place. WAV loading and preprocessing are implemented, but BPM
-detection is not implemented yet.
+Project scaffold is in place. WAV loading, preprocessing, and first-pass global BPM
+detection are implemented. Beat timestamp output is not implemented yet.
 
 ## Setup
 
@@ -19,6 +19,13 @@ python3 -m pip install -e .
 
 ```bash
 PYTHONPATH=src python -m bpm_detector detect path/to/file.wav
+```
+
+Current CLI output:
+
+```text
+Estimated BPM: 127.83
+Rounded BPM: 128
 ```
 
 ## Notes
