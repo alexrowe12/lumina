@@ -48,3 +48,11 @@ class BarFeatures:
                 self.band_energies,
             )
         )
+
+
+@dataclass(slots=True)
+class NoveltyCurve:
+    """Bar-aligned structural change scores."""
+
+    timestamps: list[float]
+    scores: np.ndarray

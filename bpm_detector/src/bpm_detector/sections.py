@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .models import AudioData, BarFeatures, TempoResult
+from .models import AudioData, BarFeatures, NoveltyCurve, TempoResult
 
 
 def extract_bar_features(
@@ -67,6 +67,44 @@ def extract_bar_features(
         spectral_centroid=_normalize_feature(spectral_centroid),
         spectral_rolloff=_normalize_feature(spectral_rolloff),
         band_energies=_normalize_feature_matrix_rows(band_energies),
+    )
+
+
+def compute_novelty_curve(
+    bar_features: BarFeatures,
+    window_bars: int = 2,
+) -> NoveltyCurve:
+    """Score structural change at each bar using left-vs-right feature contrast."""
+
+    if window_bars <= 0:
+        raise ValueError("window_bars must be positive.")
+
+    feature_vectors = bar_features.vectors
+    bar_count = len(bar_features.timestamps)
+    if feature_vectors.shape[0] != bar_count:
+        raise ValueError("Bar feature vector count does not match timestamps.")
+    if bar_count == 0:
+        return NoveltyCurve(timestamps=[], scores=np.zeros(0, dtype=np.float64))
+
+    normalized_vectors = _zscore_features(feature_vectors)
+    scores = np.zeros(bar_count, dtype=np.float64)
+
+    for bar_index in range(bar_count):
+        left_start = max(0, bar_index - window_bars)
+        left_end = bar_index
+        right_start = bar_index
+        right_end = min(bar_count, bar_index + window_bars)
+
+        if left_end <= left_start or right_end <= right_start:
+            continue
+
+        left_mean = normalized_vectors[left_start:left_end].mean(axis=0)
+        right_mean = normalized_vectors[right_start:right_end].mean(axis=0)
+        scores[bar_index] = float(np.linalg.norm(right_mean - left_mean))
+
+    return NoveltyCurve(
+        timestamps=bar_features.timestamps,
+        scores=_normalize_feature(scores),
     )
 
 
@@ -165,3 +203,13 @@ def _normalize_feature_matrix_rows(values: np.ndarray) -> np.ndarray:
     row_sums = values.sum(axis=1, keepdims=True)
     safe_row_sums = np.where(row_sums > 0.0, row_sums, 1.0)
     return values / safe_row_sums
+
+
+def _zscore_features(values: np.ndarray) -> np.ndarray:
+    if values.size == 0:
+        return values
+
+    mean = values.mean(axis=0, keepdims=True)
+    std = values.std(axis=0, keepdims=True)
+    safe_std = np.where(std > 1e-9, std, 1.0)
+    return (values - mean) / safe_std
