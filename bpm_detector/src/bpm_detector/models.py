@@ -66,3 +66,13 @@ class SectionBoundary:
     bar_index: int
     raw_score: float
     weighted_score: float
+
+
+@dataclass(slots=True)
+class SectionAnalysisResult:
+    """Full structural-analysis output for a track."""
+
+    tempo: TempoResult
+    bar_features: BarFeatures
+    novelty_curve: NoveltyCurve
+    section_boundaries: list[SectionBoundary]

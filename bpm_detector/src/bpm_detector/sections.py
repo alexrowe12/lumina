@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from .models import AudioData, BarFeatures, NoveltyCurve, SectionBoundary, TempoResult
+from .models import (
+    AudioData,
+    BarFeatures,
+    NoveltyCurve,
+    SectionAnalysisResult,
+    SectionBoundary,
+    TempoResult,
+)
 
 
 def extract_bar_features(
@@ -148,6 +155,36 @@ def select_section_boundaries(
     )
     selected.sort(key=lambda boundary: boundary.timestamp)
     return selected
+
+
+def detect_sections(
+    audio: AudioData,
+    tempo_result: TempoResult,
+    *,
+    novelty_window_bars: int = 2,
+    min_score: float = 0.4,
+    min_spacing_bars: int = 4,
+    max_boundaries: int | None = None,
+) -> SectionAnalysisResult:
+    """Run the full section-analysis pipeline for a loaded track."""
+
+    bar_features = extract_bar_features(audio, tempo_result)
+    novelty_curve = compute_novelty_curve(
+        bar_features,
+        window_bars=novelty_window_bars,
+    )
+    section_boundaries = select_section_boundaries(
+        novelty_curve,
+        min_score=min_score,
+        min_spacing_bars=min_spacing_bars,
+        max_boundaries=max_boundaries,
+    )
+    return SectionAnalysisResult(
+        tempo=tempo_result,
+        bar_features=bar_features,
+        novelty_curve=novelty_curve,
+        section_boundaries=section_boundaries,
+    )
 
 
 def _resolve_bar_end_timestamp(

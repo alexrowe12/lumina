@@ -28,6 +28,21 @@ bpm-detector detect path/to/file.wav --show-sections
 bpm-detector detect path/to/file.wav --show-sections --debug-sections
 ```
 
+You can also call the analysis pipeline directly from Python:
+
+```python
+from bpm_detector.audio import load_audio
+from bpm_detector.sections import detect_sections
+from bpm_detector.tempo import detect_tempo
+
+audio = load_audio("path/to/file.wav")
+tempo = detect_tempo(audio)
+analysis = detect_sections(audio, tempo)
+
+for boundary in analysis.section_boundaries:
+    print(boundary.timestamp, boundary.raw_score, boundary.weighted_score)
+```
+
 ## Tests
 
 ```bash
