@@ -43,6 +43,33 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print section boundary debug information including scores and bar indices.",
     )
+    detect_parser.add_argument(
+        "--section-min-score",
+        type=float,
+        default=DEFAULT_MIN_SECTION_SCORE,
+        help=(
+            "Minimum normalized novelty score for section selection. "
+            f"Lower is more sensitive. Default: {DEFAULT_MIN_SECTION_SCORE:.2f}."
+        ),
+    )
+    detect_parser.add_argument(
+        "--section-min-spacing-bars",
+        type=int,
+        default=DEFAULT_MIN_SECTION_SPACING_BARS,
+        help=(
+            "Minimum spacing between selected section boundaries in bars. "
+            f"Lower is more sensitive. Default: {DEFAULT_MIN_SECTION_SPACING_BARS}."
+        ),
+    )
+    detect_parser.add_argument(
+        "--section-window-bars",
+        type=int,
+        default=DEFAULT_NOVELTY_WINDOW_BARS,
+        help=(
+            "Bars to compare on each side when computing novelty. "
+            f"Lower is more local and often more sensitive. Default: {DEFAULT_NOVELTY_WINDOW_BARS}."
+        ),
+    )
 
     return parser
 
@@ -67,9 +94,9 @@ def main(argv: list[str] | None = None) -> int:
             section_analysis = detect_sections(
                 audio,
                 result,
-                novelty_window_bars=DEFAULT_NOVELTY_WINDOW_BARS,
-                min_score=DEFAULT_MIN_SECTION_SCORE,
-                min_spacing_bars=DEFAULT_MIN_SECTION_SPACING_BARS,
+                novelty_window_bars=args.section_window_bars,
+                min_score=args.section_min_score,
+                min_spacing_bars=args.section_min_spacing_bars,
             )
 
         _print_summary(result)
